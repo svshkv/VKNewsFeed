@@ -6,11 +6,10 @@
 //  Copyright © 2019 Алексей Пархоменко. All rights reserved.
 //
 
-import Foundation
 import UIKit
 
-extension String {
-    
+extension String
+{    
     func height(width: CGFloat, font: UIFont) -> CGFloat {
         let textSize = CGSize(width: width, height: .greatestFiniteMagnitude)
         

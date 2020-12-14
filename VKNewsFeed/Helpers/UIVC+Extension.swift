@@ -8,8 +8,8 @@
 
 import UIKit
 
-extension UIViewController {
-    
+extension UIViewController
+{    
     class func loadFromStoryboard<T: UIViewController>() -> T {
         let name = String(describing: T.self)
         let storyboard = UIStoryboard(name: name, bundle: nil)
