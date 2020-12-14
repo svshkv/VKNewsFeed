@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import VKSdkFramework
+import VK_ios_sdk
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate
 {

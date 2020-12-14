@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import VKSdkFramework
+import VK_ios_sdk
 
 protocol IAuthService: class {
 	func authServiceShouldPresent(vc: UIViewController)
@@ -23,6 +23,10 @@ class AuthService: NSObject
 	private let appId = "7695758"
 	private let vkSdk: VKSdk
 	
+	var token: String? {
+		return VKSdk.accessToken()?.accessToken
+	}
+	
 	//MARK: - Init
 	override init() {
 		vkSdk = VKSdk.initialize(withAppId: appId)
@@ -32,7 +36,7 @@ class AuthService: NSObject
 	}
 	
 	func wakeupSession() {
-		let scope = ["offline"]
+		let scope = ["wall", "friends"]
 		VKSdk.wakeUpSession(scope) { [delegate] (state, error) in
 			if let error = error {
 				fatalError(error.localizedDescription)

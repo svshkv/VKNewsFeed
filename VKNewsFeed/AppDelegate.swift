@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import VKSdkFramework
+import VK_ios_sdk
 
 @UIApplicationMain
 final class AppDelegate: UIResponder, UIApplicationDelegate
