@@ -16,7 +16,8 @@ final class NewsFeedInteractor: NewsFeedBusinessLogic
 {
 	var presenter: NewsFeedPresentationLogic?
 	var service: NewsFeedService?
-	
+	var revealedPostIds = [Int]()
+	var feedResponse: FeedResponse?
 	var dataFetcher: DataFetcher = NetworkDataFetcher(networking: NetworkService())
 	
 	func makeRequest(request: NewsFeed.Model.Request.RequestType) {
@@ -26,10 +27,22 @@ final class NewsFeedInteractor: NewsFeedBusinessLogic
 		
 		switch request {
 		case .getNewsFeed:
-			dataFetcher.getFeed { [weak self] (feedResponse) in
-				guard let feedResponse = feedResponse else { return }
-				self?.presenter?.presentData(response: .presentNewsFeed(feedResponse))
-			}
+			service?.getFeed(completion: { [weak self] (revealedPostIds, feed) in
+				self?.presenter?.presentData(response: .presentNewsFeed(feed, revealedPostIds: revealedPostIds))
+			})
+		case .getUser:
+			service?.getUser(completion: { [weak self] (user) in
+				self?.presenter?.presentData(response: .presentUserInfo(user))
+			})
+		case .revealPost(let postId):
+			service?.revealPostIds(forPostId: postId, completion: { [weak self] (revealedPostIds, feed) in
+				self?.presenter?.presentData(response: .presentNewsFeed(feed, revealedPostIds: revealedPostIds))
+			})
+		case .getNextBatch:
+			self.presenter?.presentData(response: .presentFooterLoader)
+			service?.getNextBatch(completion: { (revealedPostIds, feed) in
+				self.presenter?.presentData(response: .presentNewsFeed(feed, revealedPostIds: revealedPostIds))
+			})
 		}
 	}
 }

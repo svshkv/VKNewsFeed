@@ -18,7 +18,7 @@ protocol FeedCellViewModel {
     var comments: String? { get }
     var shares: String? { get }
     var views: String? { get }
-    var photoAttachement: FeedCellPhotoAttachementViewModel? { get }
+    var photoAttachements: [FeedCellPhotoAttachementViewModel] { get }
     var sizes: FeedCellSizes { get }
 }
 
@@ -26,6 +26,7 @@ protocol FeedCellSizes {
     var postLabelFrame: CGRect { get }
     var attachmentFrame: CGRect { get }
     var bottomViewFrame: CGRect { get }
+	var moreTextButtonFrame: CGRect { get }
     var totalHeight: CGFloat { get }
 }
 
@@ -35,10 +36,15 @@ protocol FeedCellPhotoAttachementViewModel {
     var height: Int { get }
 }
 
+protocol NewsfeedCellDelegate: class {
+	func revealPost(for cell: NewsfeedCell)
+}
+
 final class NewsfeedCell: UITableViewCell {
     
     static let reuseId = "NewsfeedCell"
     
+	weak var delegate: NewsfeedCellDelegate?
     // Первый слой
     
     let cardView: UIView = {
@@ -56,18 +62,38 @@ final class NewsfeedCell: UITableViewCell {
         return view
     }()
     
-    let postlabel: UILabel = {
-       let label = UILabel()
-        label.numberOfLines = 0
-        label.font = Constants.postLabelFont
-        label.textColor = #colorLiteral(red: 0.227329582, green: 0.2323184013, blue: 0.2370472848, alpha: 1)
-        return label
+    let postTextView: UITextView = {
+       let textView = UITextView()
+        textView.isScrollEnabled = false
+		textView.isSelectable = true
+		textView.isEditable = false
+		textView.isUserInteractionEnabled = true
+		textView.dataDetectorTypes = .all
+        textView.font = Constants.postLabelFont
+		let padding = textView.textContainer.lineFragmentPadding
+		textView.textContainerInset = UIEdgeInsets.init(top: 0, left: -padding, bottom: 0, right: -padding)
+        textView.textColor = #colorLiteral(red: 0.227329582, green: 0.2323184013, blue: 0.2370472848, alpha: 1)
+        return textView
     }()
     
+	let moreTextButton: UIButton = {
+		let button = UIButton(type: .system)
+		button.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .medium)
+		button.setTitleColor(#colorLiteral(red: 0.4, green: 0.6235294118, blue: 0.831372549, alpha: 1), for: .normal)
+		button.contentVerticalAlignment = .center
+		button.contentHorizontalAlignment = .left
+		button.setTitle("Показать больше...", for: .normal)
+		return button
+	}()
+	
+	let photosCollectionView = PhotosCollectionView()
+	
     let postImageView: WebImageView = {
         let imageView = WebImageView()
-        imageView.backgroundColor = #colorLiteral(red: 0.8901960784, green: 0.8980392157, blue: 0.9098039216, alpha: 1)
-        return imageView
+		imageView.backgroundColor = #colorLiteral(red: 0.8901960784, green: 0.8980392157, blue: 0.9098039216, alpha: 1)
+		imageView.layer.masksToBounds = true
+		imageView.layer.cornerRadius = 10
+		return imageView
     }()
     
     let bottomView: UIView = {
@@ -192,12 +218,20 @@ final class NewsfeedCell: UITableViewCell {
         return label
     }()
     
+	override func prepareForReuse() {
+		iconImageView.set(imageURL: nil)
+		postImageView.set(imageURL: nil)
+	}
+	
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
         backgroundColor = .clear
         selectionStyle = .none
         
+		iconImageView.layer.cornerRadius = Constants.topViewHeight / 2
+		iconImageView.clipsToBounds = true
+		
         cardView.layer.cornerRadius = 10
         cardView.clipsToBounds = true
         
@@ -206,29 +240,42 @@ final class NewsfeedCell: UITableViewCell {
         overlayThirdLayerOnTopView() // третий слой на topView
         overlayThirdLayerOnBottomView() // третий слой на bottomView
         overlayFourthLayerOnBottomViewViews() // четвертый слой на bottomViewViews
+		
+		moreTextButton.addTarget(self, action: #selector(moreTextButtonPressed), for: .touchUpInside)
     }
+	
     
     func set(viewModel: FeedCellViewModel) {
         
         iconImageView.set(imageURL: viewModel.iconUrlString)
         nameLabel.text = viewModel.name
         dateLabel.text = viewModel.date
-        postlabel.text = viewModel.text
+        postTextView.text = viewModel.text
         likesLabel.text = viewModel.likes
         commentsLabel.text = viewModel.comments
         sharesLabel.text = viewModel.shares
         viewsLabel.text = viewModel.views
         
-        postlabel.frame = viewModel.sizes.postLabelFrame
-        postImageView.frame = viewModel.sizes.attachmentFrame
+        postTextView.frame = viewModel.sizes.postLabelFrame
         bottomView.frame = viewModel.sizes.bottomViewFrame
-        
-        if let photoAttachment = viewModel.photoAttachement {
-            postImageView.set(imageURL: photoAttachment.photoUrlString)
-            postImageView.isHidden = false
-        } else {
-            postImageView.isHidden = true
-        }
+		moreTextButton.frame = viewModel.sizes.moreTextButtonFrame
+		
+		if let photoAttachment = viewModel.photoAttachements.first, viewModel.photoAttachements.count == 1 {
+			postImageView.set(imageURL: photoAttachment.photoUrlString)
+			postImageView.isHidden = false
+			postImageView.frame = viewModel.sizes.attachmentFrame
+			photosCollectionView.isHidden = true
+		}
+		else if viewModel.photoAttachements.count > 1 {
+			photosCollectionView.frame = viewModel.sizes.attachmentFrame
+			postImageView.isHidden = true
+			photosCollectionView.isHidden = false
+			photosCollectionView.set(photos: viewModel.photoAttachements)
+		}
+		else {
+			postImageView.isHidden = true
+			photosCollectionView.isHidden = true
+		}
     }
     
     private func overlayFourthLayerOnBottomViewViews() {
@@ -323,12 +370,12 @@ final class NewsfeedCell: UITableViewCell {
         dateLabel.heightAnchor.constraint(equalToConstant: 14).isActive = true
     }
     
-    
-    
     private func overlaySecondLayer() {
         cardView.addSubview(topView)
-        cardView.addSubview(postlabel)
+        cardView.addSubview(postTextView)
+		cardView.addSubview(moreTextButton)
         cardView.addSubview(postImageView)
+		cardView.addSubview(photosCollectionView)
         cardView.addSubview(bottomView)
         
         // topView constraints
@@ -358,4 +405,9 @@ final class NewsfeedCell: UITableViewCell {
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+	
+	@objc
+	private func moreTextButtonPressed() {
+		delegate?.revealPost(for: self)
+	}
 }

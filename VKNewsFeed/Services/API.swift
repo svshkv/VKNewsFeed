@@ -15,4 +15,5 @@ struct API {
 	static let params = ["filters": "post, photo"]
 	
 	static let newsFeed = "/method/newsfeed.get"
+	static let user = "/method/users.get"
 }

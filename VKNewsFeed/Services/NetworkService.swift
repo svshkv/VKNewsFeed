@@ -26,7 +26,7 @@ final class NetworkService
 		var components = URLComponents()
 		components.scheme = API.scheme
 		components.host = API.host
-		components.path = API.newsFeed
+		components.path = path
 		components.queryItems = params.map { URLQueryItem(name: $0, value: $1) }
 		return components.url
 	}
@@ -55,7 +55,7 @@ extension NetworkService: Networking
 		let urlOptional = createUrl(from: path, params: allParams)
 		
 		guard let url = urlOptional else { return }
-
+		print("url: ", url)
 		let request = URLRequest(url: url)
 		let task = createDataTask(from: request, completion: completion)
 		task.resume()

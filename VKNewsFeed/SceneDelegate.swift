@@ -27,8 +27,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
 		window?.windowScene = windowScene
 		authService = AuthService()
 		authService.delegate = self
-		window?.rootViewController = UIStoryboard(name: "AuthViewController", bundle: nil).instantiateInitialViewController() as? AuthViewController
+		window?.rootViewController = AuthViewController.loadFromStoryboard()
 		window?.makeKeyAndVisible()
+		
 	}
 
 	func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
@@ -67,7 +68,7 @@ extension SceneDelegate: IAuthService
 	
 	func authServiceSignIn() {
 		let feedVC: NewsFeedViewController = NewsFeedViewController.loadFromStoryboard()
-		let navVC = UINavigationController(rootViewController: feedVC ?? UIViewController())
+		let navVC = UINavigationController(rootViewController: feedVC)
 		window?.rootViewController = navVC
 	}
 	
